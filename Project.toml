@@ -1,7 +1,15 @@
 name = "AoG_DocsDraft"
 uuid = "f3c909be-0d17-478c-b644-3fe7d7e19b75"
-authors = ["Eben60"]
 version = "0.0.1"
+authors = ["Eben60"]
+
+[deps]
+AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 
 [compat]
+AlgebraOfGraphics = "0.11.9"
+DataFrames = "1.8.1"
+WGLMakie = "0.13.7"
 julia = "1.10"
