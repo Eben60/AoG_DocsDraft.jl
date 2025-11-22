@@ -1,0 +1,7 @@
+name = "AoG_DocsDraft"
+uuid = "f3c909be-0d17-478c-b644-3fe7d7e19b75"
+authors = ["Eben60"]
+version = "0.0.1"
+
+[compat]
+julia = "1.10"
