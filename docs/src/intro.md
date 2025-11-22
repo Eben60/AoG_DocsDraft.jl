@@ -77,6 +77,9 @@ This section demonstrates more advanced AlgebraOfGraphics features using a reali
 
 First, we calculate theoretical force values across a range of velocities at three different temperatures (20°C, 80°C, 140°C):
 
+<details>
+  <summary>Create data</summary>
+
 ```julia
 using WGLMakie, AlgebraOfGraphics, DataFrames
 
@@ -93,10 +96,12 @@ df = DataFrame(
 )
 ```
 
+</details>
+
 The resulting DataFrame has one row for each velocity-temperature combination:
 
 ```
-3×3 DataFrame
+51×3 DataFrame
  Row │ v        T      f       
      │ Float64  Int64  Float64 
 ─────┼───────────────────────────
@@ -104,7 +109,6 @@ The resulting DataFrame has one row for each velocity-temperature combination:
    2 │     0.0     80      0.0
    3 │     0.0    140      0.0
    ⋮
-  49 │    10.0     20   4635.17
   50 │    10.0     80   3961.56
   51 │    10.0    140   3542.49
 ```
@@ -124,6 +128,9 @@ The `color=:T => nonnumeric` mapping tells AlgebraOfGraphics to treat temperatur
 
 Experimental measurements are often stored in a "wide" format. Here data for each temperature are in a separate column. 
 
+<details>
+  <summary>Create data</summary>
+
 ```julia
 # Measured data at discrete velocities
 vs = 2:2:10
@@ -136,6 +143,8 @@ m = hcat(vs, f_measured)
 nms = vcat("v", Ts)
 dfm = DataFrame(m, nms)
 ```
+
+</details>
 
 The wide-format DataFrame looks like this:
 
@@ -154,6 +163,9 @@ The wide-format DataFrame looks like this:
 
 AlgebraOfGraphics works best with "long" format data, so let's convert data to long format using `stack`:
 
+<details>
+  <summary>Convert table, add error values</summary>
+
 ```julia
 dfl = stack(dfm, Ts)
 rename!(dfl, :value => :f, :variable => :T)
@@ -165,6 +177,8 @@ transform!(dfl, :T => ByRow(s -> parse(Int, s)) => :T)
 dfl[!, :f_err] = @. round(5 + dfl[!, :f] * 0.05; digits=1)
 dfl[!, :v_err] = @. round(0.1 + dfl[!, :v] * 0.02; digits=2)
 ```
+
+</details>
 
 The transformed long-format DataFrame with error columns:
 
