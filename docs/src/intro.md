@@ -178,6 +178,12 @@ dfl[!, :f_err] = @. round(5 + dfl[!, :f] * 0.05; digits=1)
 dfl[!, :v_err] = @. round(0.1 + dfl[!, :v] * 0.02; digits=2)
 ```
 
+**What just happened?** 
+- `stack(dfm, Ts)` takes the three temperature columns (`"20"`, `"80"`, `"140"`) and "stacks" them into two new columns: `variable` (containing the column name) and `value` (containing the data)
+- `rename!` gives these columns more meaningful names: `T` and `f`
+- `transform!` converts temperature from strings back to integers
+- We then add error estimates for both force and velocity measurements
+
 </details>
 
 The transformed long-format DataFrame with error columns:
@@ -195,7 +201,7 @@ The transformed long-format DataFrame with error columns:
   15 │    10.0    140   178.22     13.9     0.3
 ```
 
-Now we can create a scatter plot. Note how we are adding axes titles.
+Now we can create a scatter plot. Note how we're adding axis titles using the `=>` syntax:
 
 ```julia
 plt2 = data(dfl) * mapping(:v => "v [m/s]", :f => "f [mN]"; color=:T => nonnumeric) * visual(Scatter)
@@ -250,4 +256,4 @@ Key features demonstrated here:
 
 ![Complete Plot with Error Bars](assets/fg1234_air_drag_full.png)
 
-This final plot combines four layers: theoretical lines, measured points, and error bars in both directions, creating a presentation-ready figure that clearly communicates both the data and its uncertainty. 
+This final plot combines four layers: theoretical lines, measured points, and error bars in both directions, creating a presentation-ready figure that clearly communicates both the data and its uncertainty.
