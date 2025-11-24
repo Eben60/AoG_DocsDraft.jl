@@ -83,9 +83,8 @@ First, we calculate theoretical force values across a range of velocities at thr
 ```julia
 using WGLMakie, AlgebraOfGraphics, DataFrames, Unitful
 
-f_theor(v; T=25u"°C", d=10u"cm^2", Cp=0.47) = 13.6816e5u"(kg*K)/m^5" * Cp * v^2 * d^2 / (T |> u"K") |> u"mN"
+f_theor(v; T=25u"°C", d=10u"cm^2", Cp=0.47) = (13.6816e5u"(kg*K)/m^5" * Cp * v^2 * d^2 / (T |> u"K")) |> u"mN"
 T = 20:60:140
-Ts = (T .|> string)
 Tc = collect(T) .* u"°C"
 v = (0:0.2:10) .* u"m/s"
 
@@ -144,7 +143,8 @@ f_measured = [
     ] .* u"mN"
 
 m = hcat(vs, f_measured)
-nms = vcat("v", Ts)
+Ts = (T .|> string)
+nms = vcat("v", Ts) # column names 
 dfm = DataFrame(m, nms)
 ```
 
