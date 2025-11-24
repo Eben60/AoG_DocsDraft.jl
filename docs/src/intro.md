@@ -4,7 +4,7 @@
 
 ## Simple Plots from a Vector
 
-Let's start with the most simple dataset - an one-dimensional array of data - and see how we can visualize it in different ways.
+Let's start with the most simple dataset - a one-dimensional array of data - and see how we can visualize it in different ways.
 
 ### Scatter Plot
 
@@ -71,7 +71,7 @@ Here, we also adjusted the axis limits and hid the legend for a cleaner look.
 
 ## Working with Real Data: Air Drag Example
 
-This section demonstrates more advanced AlgebraOfGraphics features using a realistic example: comparing theoretical air drag force calculations with experimental measurements. The air drag force on a sphere depends on velocity and temperature, which are our experimental variables. We'll progressively build up a complex multi-layer plot to show both theoretical predictions and measured data with error bars.
+This section demonstrates more advanced AlgebraOfGraphics features using a realistic example: comparing theoretical air drag force calculations with experimental measurements. It also showcases how AlgebraOfGraphics seamlessly handles physical units using `Unitful.jl`, automatically labeling axes with the correct units. The air drag force on a sphere depends on velocity and temperature, which are our experimental variables. We'll progressively build up a complex multi-layer plot to show both theoretical predictions and measured data with error bars.
 
 ### Theoretical Data: Line Plots with Grouping
 
@@ -81,18 +81,18 @@ First, we calculate theoretical force values across a range of velocities at thr
   <summary>Create data</summary>
 
 ```julia
-using WGLMakie, AlgebraOfGraphics, DataFrames
+using WGLMakie, AlgebraOfGraphics, DataFrames, Unitful
 
-# Air drag force calculation (simplified); v in m/s, T in °C, d in cm, 
-f_theor(v; T=25, d=10, Cp=0.47) = 13.6816 * Cp * v^2 * d^2 / (273.15 + T) # mN
-
+f_theor(v; T=25u"°C", d=10u"cm^2", Cp=0.47) = 13.6816e5u"(kg*K)/m^5" * Cp * v^2 * d^2 / (T |> u"K") |> u"mN"
 T = 20:60:140
-v = 0:0.2:10
+Ts = (T .|> string)
+Tc = collect(T) .* u"°C"
+v = (0:0.2:10) .* u"m/s"
 
 df = DataFrame(
-    v = [v for v in v for _ in T],
-    T = [t for _ in v for t in T],
-    f = [f_theor(v, T=t) for v in v for t in T]
+    v = [v for v in v for _ in Tc],
+    T = [t for _ in v for t in Tc],
+    f = [f_theor(v, T=t) for v in v for t in Tc]
 )
 ```
 
@@ -101,44 +101,48 @@ df = DataFrame(
 The resulting DataFrame has one row for each velocity-temperature combination:
 
 ```
-51×3 DataFrame
- Row │ v        T      f       
-     │ Float64  Int64  Float64 
-─────┼───────────────────────────
-   1 │     0.0     20      0.0
-   2 │     0.0     80      0.0
-   3 │     0.0    140      0.0
-   ⋮
-  50 │    10.0     80   3961.56
-  51 │    10.0    140   3542.49
+153×3 DataFrame
+ Row │ v           T          f            
+     │ Quantity…   Quantity…  Quantity…    
+─────┼─────────────────────────────────────
+   1 │  0.0 m s⁻¹      20 °C        0.0 mN
+   2 │  0.0 m s⁻¹      80 °C        0.0 mN
+   3 │  0.0 m s⁻¹     140 °C        0.0 mN
+   4 │  0.2 m s⁻¹      20 °C        0.08 mN
+  ⋮  │     ⋮           ⋮           ⋮
+ 152 │ 10.0 m s⁻¹      80 °C    182.09 mN
+ 153 │ 10.0 m s⁻¹     140 °C    155.64 mN
 ```
 
-Now we create a line plot with separate curves for each temperature using the `group` aesthetic:
+Now we create a line plot with separate curves for each temperature using the `group` keyword:
 
 ```julia
-plt1 = data(df) * mapping(:v, :f; group=:T, color=:T => nonnumeric) * visual(Lines)
+plt1 = data(df) * mapping(:v, :f; group=:T, color=:T => nonnumeric) * visual(Lines) 
 fig1 = plt1 |> draw
 ```
 
-The `color=:T => nonnumeric` mapping tells AlgebraOfGraphics to treat temperature as a categorical variable for coloring purposes, creating distinct colors for each temperature value.
+The `color=:T => nonnumeric` transformation tells AlgebraOfGraphics to treat temperature as a categorical variable for marker (in this case, lines) colors.
 
 ![Theoretical Air Drag Curves](assets/fig1_air_drag_theory.png)
 
 ### Measured Data: Transforming from Wide to Long Format
 
-Experimental measurements are often stored in a "wide" format. Here data for each temperature are in a separate column. 
+Experimental measurements are often stored in a "wide" format. Here, data for each temperature are in a separate column. 
 
 <details>
   <summary>Create data</summary>
 
 ```julia
 # Measured data at discrete velocities
-vs = 2:2:10
-f_measured = [10.17 11.78 3.43; 39.86 29.74 26.15; 91.6 69.46 65.26; 
-              160.67 126.57 103.57; 240.65 204.54 178.22]
+vs = (2:2:10) .* u"m/s"
+f_measured = [
+    10.17 11.78 3.43; 
+    39.86 29.74 26.15; 
+    91.6 69.46 65.26; 
+    160.67 126.57 103.57; 
+    240.65 204.54 178.22
+    ] .* u"mN"
 
-# Create wide-format DataFrame
-Ts = (T .|> string)
 m = hcat(vs, f_measured)
 nms = vcat("v", Ts)
 dfm = DataFrame(m, nms)
@@ -150,38 +154,35 @@ The wide-format DataFrame looks like this:
 
 ```
 5×4 DataFrame
- Row │ v        20       80       140     
-     │ Float64  Float64  Float64  Float64 
-─────┼────────────────────────────────────
-   1 │     2.0    10.17    11.78     3.43
-   2 │     4.0    39.86    29.74    26.15
-   3 │     6.0    91.6     69.46    65.26
-   ⋮
-   4 │     8.0   160.67   126.57   103.57
-   5 │    10.0   240.65   204.54   178.22
+ Row │ v           20         80         140       
+     │ Quantity…   Quantity…  Quantity…  Quantity… 
+─────┼─────────────────────────────────────────────
+   1 │  2.0 m s⁻¹   10.17 mN   11.78 mN    3.43 mN
+   2 │  4.0 m s⁻¹   39.86 mN   29.74 mN   26.15 mN
+   3 │  6.0 m s⁻¹    91.6 mN   69.46 mN   65.26 mN
+   4 │  8.0 m s⁻¹  160.67 mN  126.57 mN  103.57 mN
+   5 │ 10.0 m s⁻¹  240.65 mN  204.54 mN  178.22 mN
 ```
 
-AlgebraOfGraphics works best with "long" format data, so let's convert data to long format using `stack`:
+AlgebraOfGraphics works best with "long" format data, so let's convert the data to long format using `stack`:
 
 <details>
   <summary>Convert table, add error values</summary>
 
 ```julia
-dfl = stack(dfm, Ts)
-rename!(dfl, :value => :f, :variable => :T)
+dfl = stack(dfm, Ts; value_name=:f, variable_name=:T)
 
-# convert T into numeric data
-transform!(dfl, :T => ByRow(s -> parse(Int, s)) => :T) 
+# convert T into numeric unitful data
+transform!(dfl, :T => ByRow(s -> parse(Int, s)*u"°C") => :T)
 
 # Add error estimates
-dfl[!, :f_err] = @. round(5 + dfl[!, :f] * 0.05; digits=1)
-dfl[!, :v_err] = @. round(0.1 + dfl[!, :v] * 0.02; digits=2)
+dfl[!, :f_err] = @. 5u"mN" + dfl[!, :f] * 0.05
+dfl[!, :v_err] = @. 0.1u"m/s" + dfl[!, :v] * 0.02
 ```
 
 **What just happened?** 
-- `stack(dfm, Ts)` takes the three temperature columns (`"20"`, `"80"`, `"140"`) and "stacks" them into two new columns: `variable` (containing the column name) and `value` (containing the data)
-- `rename!` gives these columns more meaningful names: `T` and `f`
-- `transform!` converts temperature from strings back to integers
+- `stack(dfm, Ts; value_name=:f, variable_name=:T)` takes the three temperature columns (`"20"`, `"80"`, `"140"`) and "stacks" them into two new columns: `T` (containing the column name) and `f` (containing the data)
+- `transform!` converts temperature from strings back to integers and then to `°C`
 - We then add error estimates for both force and velocity measurements
 
 </details>
@@ -189,22 +190,22 @@ dfl[!, :v_err] = @. round(0.1 + dfl[!, :v] * 0.02; digits=2)
 The transformed long-format DataFrame with error columns:
 
 ```
-15×5 DataFrame
- Row │ v        T      f        f_err    v_err   
-     │ Float64  Int64  Float64  Float64  Float64 
-─────┼──────────────────────────────────────────────
-   1 │     2.0     20    10.17      5.5     0.14
-   2 │     4.0     20    39.86      7.0     0.18
-   3 │     6.0     20    91.6       9.6     0.22
-   ⋮
-  14 │     8.0    140   103.57     10.2     0.26
-  15 │    10.0    140   178.22     13.9     0.3
+ Row │ v           T          f          f_err      v_err      
+     │ Quantity…   Quantity…  Quantity…  Quantity…  Quantity…  
+─────┼─────────────────────────────────────────────────────────
+   1 │  2.0 m s⁻¹      20 °C   10.17 mN    5.51 mN  0.14 m s⁻¹
+   2 │  4.0 m s⁻¹      20 °C   39.86 mN    6.99 mN  0.18 m s⁻¹
+   3 │  6.0 m s⁻¹      20 °C    91.6 mN    9.58 mN  0.22 m s⁻¹
+   4 │  8.0 m s⁻¹      20 °C  160.67 mN   13.03 mN  0.26 m s⁻¹
+  ⋮  │     ⋮           ⋮          ⋮          ⋮          ⋮
+  14 │  8.0 m s⁻¹     140 °C  103.57 mN   10.18 mN  0.26 m s⁻¹
+  15 │ 10.0 m s⁻¹     140 °C  178.22 mN   13.91 mN   0.3 m s⁻¹
 ```
 
-Now we can create a scatter plot. Note how we're adding axis titles using the `=>` syntax:
+Now we can create a scatter plot. 
 
 ```julia
-plt2 = data(dfl) * mapping(:v => "v [m/s]", :f => "f [mN]"; color=:T => nonnumeric) * visual(Scatter)
+plt2 = data(dfl) * mapping(:v, :f; color=:T => nonnumeric) * visual(Scatter) 
 fig2 = plt2 |> draw
 ```
 
@@ -224,27 +225,24 @@ This creates a single plot showing both datasets, making it easy to compare theo
 
 ### Advanced Layering: Error Bars and Custom Scales
 
-Finally, we add error bars in both x and y directions. To avoid cluttering the legend, we use a named scale (`:err`) for the error bars and suppress its legend:
+Finally, we add error bars in both x and y directions. To avoid cluttering the legend, we use a named scale `:err` for the error bars to be able to hide them:
 
 ```julia
 # Y-direction error bars
-plt3 = data(dfl) * mapping(:v, :f, :f_err; 
-                           color = :T => nonnumeric => scale(:err)) * 
-       visual(Errorbars; whiskerwidth = 10)
+plt3 =  data(dfl) * 
+        mapping(:v, :f, :f_err; color = :T => nonnumeric => scale(:err)) * 
+        visual(Errorbars; whiskerwidth = 10)
 
 # X-direction error bars
-plt4 = data(dfl) * mapping(:v, :f, :v_err; 
-                           color=:T => nonnumeric) * 
-       visual(Errorbars; whiskerwidth = 10, direction = :x)
+plt4 =  data(dfl) * 
+        mapping(:v, :f, :v_err; color=:T => nonnumeric => scale(:err)) * 
+        visual(Errorbars; whiskerwidth = 10, direction = :x)
 
 # Combine all layers with custom axis settings
-fg1234 = draw(plt4 + plt3 + plt2 + plt1,
-    scales(; err = (; legend = false)),
-    axis = (; xlabel = "v [m/s]", 
-             ylabel = "f [mN]", 
-             limits = (0, nothing, 0, nothing)),
-    figure=(; size=(600, 450)),
-)
+fg1234 = draw(plt4 + plt3 + plt2 + plt1, 
+    scales(; err = (; legend = false));
+    axis = (; limits = (0, nothing, 0, nothing))
+    )
 ```
 
 Key features demonstrated here:
