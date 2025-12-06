@@ -1,3 +1,5 @@
+*Note: The text of this draft is mostly AI-generated and has not yet been properly human-reviewed*
+
 # Introduction to AlgebraOfGraphics
 
 `AlgebraOfGraphics.jl` is a powerful and flexible library for creating plots in Julia. It uses a layered approach, allowing you to build complex plots from simple components. This introduction will walk you through some basic examples to get you started.
