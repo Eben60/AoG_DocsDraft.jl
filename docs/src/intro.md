@@ -43,6 +43,19 @@ fg1b = data(d01) * mapping(:y) * visual(BarPlot) |> draw
 
 ![Bar Plot](assets/fg1b.png)
 
+## XY Plots
+
+### Lines XY-Plot
+
+```julia
+d03 = (; time=[0.1, 0.11, 0.19], V=[1.53, 1.62, 1.57])
+fg3x = data(d03) * mapping(:T, :V) * visual(Lines) |> draw
+```
+
+![XY Lines Plot](assets/fg3x.png)
+
+If two arguments are supplied to `mapping`, the following `visual` interprets them, correspondingly, as X and Y values. `Scatter` or `BarPlot` XY-Plots can be produced in similar way.
+
 ## Mapping Categorical Data
 
 Now, let's add some categorical data to our plots.
